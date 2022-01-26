@@ -1,0 +1,180 @@
+
+///==================================================================================
+////                                  AGGREGATION
+////==================================================================================
+// 1) Aggregation, dokumanlardaki verilerin islenmesi ve hesaplanan 
+//    sonuclarin donmesini saglayan islemlerdir. 
+//
+// 2) Aggregation islemleri, farklı dokumanlardaki degerleri gruplandirabilir.
+//
+// 3) Bu gruplanan veriler uzerinde cesitli islemlerin gereceklestirelerek tek 
+//    bir sonuc degerinin donmesi saglanabilir.
+//
+//  4) MongoDB, 3 farklı yontem ile aggregation gerceklestirmeye izin verir.
+//     A) aggregation pipeline (toplama boru hattı)
+//     B) map-reduce function (map indirgeme)
+//     C) single-purpose aggregation (tek-amaç toplama)
+//
+//  5) Aggregiation, SQL'deki Join islemlerine benzetilebilir. 
+//
+//     SQL         MONGO
+//----------------------
+//     WHERE       $match
+//     GROUP BY 	 $group
+//     HAVING	     $match
+//     SELECT	     $project
+//     ORDER BY    $sort
+//     LIMIT	     $limit
+//     SUM()	     $sum
+//     COUNT()	   $count, $sum
+//     JOIN	       $lookup
+//     MERGE 	     $merge (MongoDB 4.2 ve sonrasi)
+////aggregation (sum,max,avg vs atomic operator) yaparken bi field (column) kullanacaksak syntax ı ==> "$urunAdi" şeklinde===================================================================
+
+///==================================================================================
+////                          AGGREGATION PIPELINE
+////==================================================================================
+// SYNTAX
+// 
+//   pipeline = [
+ //   { $match : { … },
+ //   { $group : { … },
+ //   { $sort : { … },
+//      ...
+//   ]
+//   db.collectionName.aggregate(pipeline, options)
+//
+//  $match() – Verileri secerken flitrelemek icin
+//  $group({_id : "$field"}) - islenen verilerin grupplanmasi icin 
+//  $sort()  Sonuclarin siralanmasi icin
+
+////---------------------------------------------------------------------------------
+//// 1) "KISILER" veritabaninda "ogrenciler" collection'i tanimlayalim. 
+// asagidaki dokumanlari collection'a kaydedelim.   
+// //---------------------------------------------------------------------------------
+use("KISILER")
+db.ogrenciler.insertMany([
+{"isim": "Tarik ", "yas":57, "sube": "A", "not":97, "dersler":["fizik", "mat"]}, 
+{"isim": "Selim", "yas":37, "sube": "A","not":77,},
+{"isim": "Nalan", "yas":67, "sube": "B","not":55, "dersler":["fizik", "ingilizce"]},
+{"isim": "Burhan", "yas":21, "sube": "B","not":43, "dersler":["fizik", "mat"]},
+{"isim": "Niyazi", "yas":40, "sube": "B","not":99, "dersler":["ingilizce"]},
+{"isim": "Galip", "yas":37, "sube": "A","not":34, "dersler":["ingilizce"]},
+{"isim": "Teslime", "yas":24, "sube": "A","not":88, "dersler":["mat","fizik","kimya"]}]);
+
+///---------------------------------------------------------------------------------
+//// 2) yasi 30'dan buyuk olan ogrencileri sorgulayiniz.   
+////---------------------------------------------------------------------------------
+ use("KISILER")
+ db.ogrenciler.aggregate({$match:{yas : {$gt:30}}});
+// find ile de çözülür
+use("KISILER");
+db.ogrenciler.find({yas: {$gt:30}}).count();
+
+
+// ////--------------------------------------------------------------------------------
+// //// 3) dersler i sadece ingilizce ve yasi 100'dan kucuk olan ogrencileri sorgulayiniz.   
+// ////---------------------------------------------------------------------------------
+use("KISILER");
+db.ogrenciler.aggregate({$match:  {dersler:["ingilizce"], yas:  {$lt:100}}    })
+
+
+
+
+use("KISILER");
+db.ogrenciler.aggregate({$match:{dersler:["ingilizce"],yas:{$lt:100}}})
+
+
+use("KISILER");
+db.ogrenciler.aggregate({$match:{dersler:"ingilizce",yas:{$lt:100}}})
+
+
+use("KISILER");
+db.ogrenciler.aggregate({$match:{dersler:"ingilizce" }})
+
+
+use("KISILER");
+db.ogrenciler.aggregate({$match:{dersler:["ingilizce"]}})
+
+////---------------------------------------------------------------------------------
+//// 4) B-subesindeki ogrenci sayisini hesaplayan sorguyu yaziniz. NOT: SAYMAK icin 
+////    $match icerisinde $count metodu kullanilabilir. 
+////---------------------------------------------------------------------------------
+use("KISILER")
+db.ogrenciler.find({sube:"B"}).count()
+
+
+use("KISILER")
+db.ogrenciler.aggregate({$match:{sube:"B"}},{$count:"B subesindeki ogrenci sayisi"})
+
+
+
+// NOT:Sadece saymak icin dogrudan db.colection.count() metoduda kullanilabilir.
+//     Bu yonteme single-purpose aggregation metotlari denilmektir. 
+//     Ancak bu islem aggregetion'daki gibi sorgu cevabi dondurmez. Sadece hesaplanan
+//     sonucu dondurur.tırnak içinde yazı ("B-Subesi Ogrenci Sayisi") yazamayız
+use("KISILER")
+db.ogrenciler.count( {sube: "B"}); //kullanımdan kalkti
+
+//NOT: Gruplandirirak saymak icin (sadece buraya özel) $sum:1 kullanilabilir. bu şekil kullanımda her eşleşen durumda sum ın sonucu 1 e r 1 er artar
+ 
+// count:bir grup icin 1 sayisinin donmesini ve bunlarin toplanmasini saglar.tek sonuç ,mesela B sınıfındaki.....ler..gruplama yapıldığında grup elemanlarını sayar, sum ise grupların içindeki elemanları sayar
+// sum:A daki...ler, B deki...ler birer birer toplanır
+////---------------------------------------------------------------------------------
+ ////    NOT: Group isleminde degiskenlerin onune $ isareti konulmalidir.
+ //  id den sonra dersler, not vs de olabilir, 
+ //burada şubeye göre grupla=$group:{_id:"$sube"}}
+
+
+
+////    ---------------------------------------------------------------------------------
+//// 5) Tum subelerdeki toplam ogrenci sayisini hesaplayan sorguyu yaziniz.
+////    
+        use("KISILER")   
+        db.ogrenciler.find({$or:[{sube:"B"},{sube:"A"}]}).count();
+
+
+
+    use("KISILER")     
+db.ogrenciler.aggregate({ $group:{_id:"$sube",   toplamOgrenci: {$sum:1}  }  })
+
+
+
+
+ //db.ogrenciler.aggregate ({$group:{_id: "$sube"}},{$count:"toplam öğrenci"
+         //==>bu yanlış yazım, subeleri sayar, cevap olarak 2 yazdırır, 2 sube var der
+
+     
+ //sum:1 mesela A daki öğrencileri 1 er 1 er sayıp toplar. burada 1 yerine $not (not lara göre topla) yazarsak alttaki soru gibi A daki notları kendi arasında B dekileri kendi arasında not ları toplar. count sum max gibi metodlarda ön bilgi şart
+
+////---------------------------------------------------------------------------------
+//// 6) Tum subelerdeki toplam ogrenci sayilarini ve her subedeki maks notu hesaplayan 
+////    sorguyu yaziniz.
+
+////----------------------------------------------------------------------------------
+use("KISILER")
+
+db.ogrenciler.aggregate({$group:{_id: "$sube",toplamOgrenci:{$sum:1},maxNot:{$max:"$not"}}})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

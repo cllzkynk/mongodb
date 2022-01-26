@@ -1,0 +1,174 @@
+////=================================================================
+////            findOneAndUpdate - findOneAndReplace
+////=================================================================
+
+// A - findOneAndReplace() 
+//----------------------------
+//   1-) belirtilen koşullara uyan ilk sorguyu bulur ve degistirir. 
+//   2-) Komut icerisinde belirtilen kisimlari guncellerken bos birakilan 
+//       alanlari kaldirir. (API'lerdeki PUT metoduna benzetilebilir).
+//   3-) Islem sonunda VSCODE ilgili dokumanin guncellenMEmiş halini gosterir.yani ben bunu değiştirdim diye haber veriyor
+//   4-) SYNTAX
+//        db.collection.findOneAndReplace( {filter}, {replacement}, {options} )   
+//       
+// B - findOneAndUpdate() 
+//----------------------------
+///  1-) Belirtilen koşullara uyan ilk sorguyu bulur ve degistirir. 
+//   2-) Komut icerisinde belirtilen kisimlari guncellerken bos birakilan 
+//       alanlari modifiye etmez  (API'lerdeki PACTH metoduna benzetilebilir).
+//   3-) komutun kosul kismindan sonra degislikileri gerceklestirmek icin bir 
+//       atomic operator kullanilir. ($set (direk değer verilirse), $inc(arttırma azaltma), $mul (çarpma)vb.)
+//   4)  Islem sonunda VSCODE ilgili dokumanin guncellenMEmiş halini gosterir.
+//   5-) SYNTAX
+//       db.collection.findOneAndUpdate( {filter}, {update}, {options} ) ******************
+////=================================================================
+
+////-----------------------------------------------------------------
+//// 1) "GOOGLE" adinda bir veritabani ve icerisinde "personel" 
+//// adinda bir collection tanimlayalim.  
+////-----------------------------------------------------------------
+use("GOOGLE");
+// db.createCollection("personel");
+
+// ////-----------------------------------------------------------------
+// //// 2) asagidaki dokumanlari collection'a kaydedelim.   
+// ////-----------------------------------------------------------------
+use("GOOGLE");
+db.personel.insertMany([
+ {"isim":"Ali Bak", "maas": 5000, "iseBaslama": new Date('2014-03-01')},
+ {"isim":"Can Tak", "maas": 7500, "iseBaslama": new Date('2011-03-04')},
+ {"isim":"Veli Gel", "maas": 3550, "iseBaslama": new Date('2013-03-01')},
+ {"isim":"Can Yak", "maas": 4800, "iseBaslama": new Date('2011-09-30')},
+ {"isim":"Veli Git", "maas": 7200, "iseBaslama": new Date('2007-12-06')},
+ {"isim":"Ali Han", "maas": 5250, "iseBaslama": new Date('2004-11-21')},
+ {"isim":"Ayse Gel", "maas": 10500, "iseBaslama": new Date('1990-07-23')},
+ {"isim":"Su Ak", "maas": 3300, "iseBaslama": new Date('1999-03-30')},
+  ]);
+
+// ////-----------------------------------------------------------------
+// //// 3) Maasi 5000 'den az olan ilk personelin maasini 6000 TL yapiniz.
+// ////-----------------------------------------------------------------
+use("GOOGLE")
+ db.personel.findOneAndReplace({maas:   {$lt:5000 }  },{ maas:6000})
+//compass ta bak isim vs gitti sadece maaş kaldı çünkü replace.buradaki sonuç eski hali oluyor
+// ////-----------------------------------------------------------------
+// //// 4) Maasi 5250 olan ilk personelin maasini 5555, ismini "Ceylan" ve 
+// ////   ise baslama tarihini su an yapalim.
+// ////-----------------------------------------------------------------
+use("GOOGLE")
+db.personel.findOneAndReplace({maas:   5250  },{ maas:5555, isim:"Ceylan", iseBaslama: new Date()});
+
+// ////-----------------------------------------------------------------
+// //// 5) Maasi en az olan personelin adini, noname, ise baslama tarihini
+// ////    nodate, maasini ise 0 yapiniz.
+// ////-----------------------------------------------------------------
+use("GOOGLE")
+db.personel.findOneAndReplace({},{isim:"noname", iseBaslama: "noDate", maas:0},{sort:{maas:1}});
+
+//ÖNCEKİ DERSTE SORT cevaba yansımıştı, sıralı yazdırmıştı, find.sort, burada sırala ilkini al yaptırıyoruz, sıralı yazdırmaz, bir eleman alıyoruz ve database e kalıcı yolluyoruz
+
+
+
+
+// ////-----------------------------------------------------------------
+// //// 6) Maasi 7200 olan personelin maasini 8000 yapiniz, diger kisimlari
+// ////    degistirmeyiniz.
+// ////-----------------------------------------------------------------
+use("GOOGLE");
+db.personel.findOneAndUpdate({maas:7200},{    $set: { maas:8000 }    });
+
+//7) maası 5000 veya ismi Veli Git olan personelin maasini 9000 , ismini CEMİL yap,diğer yerlere dokunma
+use("GOOGLE")
+db.personel.findOneAndUpdate({$or:[ {maas:5000},{isim:"Veli Git"}  ] },{ $set:{maas:9000, isim:"CEMİL"} })
+
+
+////-----------------------------------------------------------------
+//// 8) Maasi 7500 olan personelin maasina %10 zam yapiniz, 
+////     diger kisimlari degistirmeyiniz.update
+////-----------------------------------------------------------------
+use("GOOGLE")
+db.personel.findOneAndUpdate({maas:7500},{  $mul: {maas:1.1}    })   
+
+////-----------------------------------------------------------------
+//// 9) Maasi 4800 olan personelin maasina 500 TL zam yapiniz, 
+////     diger kisimlari degistirmeyiniz.
+////azaltmak için -500 yazabiliriz-----------------------------------------------------------------
+use("GOOGLE")
+db.personel.findOneAndUpdate({maas:4800},{  $inc: {maas:500}    })   
+
+
+// ////-----------------------------------------------------------------
+// //// 10) Maasi 15000 olan personelin Adini "Mehmet Can" ve ise baslama 
+// ////    tarihini su an olarak degisitriniz.Eger boyle bir dokuman yok 
+// ////    ise yeni kayit olarak ekleyelim.
+//-------------------------------------
+// // NOT: guncelleme (replace veya update) isleminde sorgu ile 
+// //      eslesmeme durumu oldugunda dokumanin olusturulmasi istenirse
+// //      {upsert:true} kullanilmalidir. burada null döndürür, compass ta yeni kayıt ekler
+use("GOOGLE")
+db.personel.findOneAndUpdate({maas:15000},{ $set:{isim:"Mehmet Can",iseBaslama:new Date()}       },{upsert:true})
+
+
+// ////=================================================================
+// ////           updateOne - updateMany - update (depreceated)
+// ////
+// ////  update komutlari ile de bir dokumandaki bigilerin bir kismi yada
+// ////  tamami guncellenebilir. update komutlari findOneAndUpdate komutuna
+// ////  gore daha hizli calisir. Bunun sebebi bu komutlarin sorguyu cevap
+// ////  olarak dondurmemesidir. Bu komutlar sadece istatistik olarak kisa 
+// ////  bilgiler dondurur.sorgunun elemanları lazım değilse
+// ////=================================================================
+
+// ///-----------------------------------------------------------------
+// //// 11) ismi Can Tak olan personelin maasini 15000'e guncelleyin.
+// ///-----------------------------------------------------------------
+use("GOOGLE")
+db.personel.updateOne({isim:"Can Tak"},{ $set:  {maas:15000} })
+
+
+// ////-----------------------------------------------------------------
+// //// 12) maasi 15000 olan personellerin dokumanina prim:1000 bilgisini ekleyiniz.birkaç kişinin maaşının 15000 olduğundan emin ol önce
+// ////-----------------------------------------------------------------
+use("GOOGLE");
+db.personel.updateMany({maas:15000},{ $set:  {prim:1000 }   })
+
+
+////-----------------------------------------------------------------
+//// maasi 5000 olan personellerin dokumanina prim:200 bilgisini
+///     eger boyle bir personel yok ise (upsert:true) yeni bir kayit aciniz.yeni açılacağı için id li yazdırdı consol da
+////-----------------------------------------------------------------
+use("GOOGLE");
+
+////-----------------------------------------------------------------
+// //// maasi 7000 den az olan personellerin dokumanina prim:500 bilgisini ekleyiniz.
+// ////-----------------------------------------------------------------
+
+
+
+//13) key adını değiştirme. bütün dökümanların field ad larını değiştirelim
+use("GOOGLE");
+db.personel.updateMany( {},{$rename:{'isim':'name', 'maas':'salary'} })
+
+
+////=================================================================
+////           deleteOne - deleteMany - (update-remove =depreceated=kullanımdan kalktı)
+////=================================================================
+
+////-----------------------------------------------------------------
+//// 14) ismi Mehmet Can olan kaydi siliniz. 
+////-----------------------------------------------------------------
+use("GOOGLE")
+db.personel.deleteOne({name:"Mehmet Can"})
+
+////-----------------------------------------------------------------
+//// 15) maasi 15000 olan dokumanlari siliniz. 
+////-----------------------------------------------------------------
+use("GOOGLE")
+db.personel.deleteMany({salary:15000})
+
+db.personel.remove({}); //2.yol ama kullanılmıyor
+////-----------------------------------------------------------------
+//// 16) Tum dokumanlari siliniz. 
+use("GOOGLE")
+db.personel.deleteMany({})
+ 
