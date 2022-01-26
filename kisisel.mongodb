@@ -1,0 +1,48 @@
+use("EXAMPLE2");
+db.people.find();
+
+//bir obje ekledik
+use("EXAMPLE2");
+db.people.insertOne({"id": "1a111111-1111-1111-1111-111111111111",
+    "ulke": "TR",
+    "isim": "Esraaa",
+    "soyisim": "Ozkaynak",
+    "sehir": "Izmir",
+    "email": "celil@rujparsot.org",
+    "yas": 29,
+    "evliMi": true,
+    "cinsiyet": "Male",
+    "maas": "$5963.93",
+    "tel": "(443) 302-3375",
+    "dogum_tarihi": "8/29/1994"});
+
+
+//ulkesi tr olani getir
+use("EXAMPLE2");
+db.people.find({"ulke": "TR"})
+
+
+
+//ulke tr ve isim esra olani getir
+use("EXAMPLE2");
+db.people.find({"ulke": "TR","isim":"Esraaa"})
+
+//tum bekarlari getir
+use("EXAMPLE2");
+db.people.find({"evliMi": false})
+
+
+// yasi 50 uzeri olanlari getir
+use("EXAMPLE2");
+db.people.find({"yas" :{$gt:50}})
+
+
+//kisileri sadece isim soyisimleri ve maaslari gorunecek sekilde massi en coktan en aza  listeleyiniz
+use("EXAMPLE2");
+db.people.find({}, {"isim":1,"soyisim": 1,"maas": 1}     ).sort({"maas":-1})
+
+//kisileri sadece isim soyisimleri ve maaslari gorunecek sekilde massi en azdan coka  listeleyiniz
+//bunlarin sadece evlilerinie getir
+use("EXAMPLE2");
+db.people.find({"evliMi":true}, {"isim":1,"soyisim": 1,"maas": 1,"evliMi":1}     ).sort({"maas":1})
+

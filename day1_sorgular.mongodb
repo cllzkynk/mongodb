@@ -1,0 +1,216 @@
+////=================================================================
+////                      SORGULAR (QUERIES) https://docs.mongodb.com/manual/reference/operator/query-comparison/      adresine bakabilirler
+
+////=================================================================
+
+
+////-----------------------------------------------------------------
+//// 1) "URUNLER" adinda bir veritabani ve icerisinde "fiyatlar" 
+//// adinda bir collection tanimlayalim.  
+////-----------------------------------------------------------------
+use("URUNLER");
+
+////-----------------------------------------------------------------
+//// 2) asagidaki dokumanlari collection'a kaydedelim ve listeleyelim.  
+////-----------------------------------------------------------------
+use("URUNLER");
+db.fiyatlar.insertMany([
+{"urunAdi":"TV", "fiyat": 5000, "vergi": 10 ,"summary":[{"version":1},{"show":"yok"}]},
+{"urunAdi":"Telefon", "fiyat": 3500, "vergi": 20 ,"hediye":"kapak"},
+{"urunAdi":"Utu", "fiyat": 1500, "vergi": 5 },
+{"urunAdi":"Koltuk", "fiyat": 5000, "vergi": 10},
+{"urunAdi":"Buzdolabi", "fiyat": 4000, "vergi": 10 } ] ); 
+
+use("URUNLER")
+ db.fiyatlar.find();
+
+////-----------------------------------------------------------------
+//// 3) ilk üc dokumani sorgulayalim --- limit() metodu
+////-----------------------------------------------------------------
+use("URUNLER")
+db.fiyatlar.find().limit(3);
+
+////-----------------------------------------------------------------
+//// 4) Sadece 2. ve 3. dokumanlari sorgulayalim   
+////-----------------------------------------------------------------
+use("URUNLER")
+db.fiyatlar.find().skip(1).limit(2);
+
+////-----------------------------------------------------------------
+//// 5) Birinci dokumani sorgulayalim   
+////-----------------------------------------------------------------
+use("URUNLER")
+db.fiyatlar.findOne();
+db.fiyatlar.find().limit(1);
+
+////=================================================================
+////       LOGICAL QUERY OPERATOR (mantıksal sorgu) ($and ,$or, $not,$nor)
+////
+//// SYNTAX: { $and: [ {ifade1}, {ifade2} , ... , {ifadeN} ] } nor ve or, and gibi bencil
+////         { field: { $not: { <operator-ifade> } } }  ==> ( {"vergi": {$not: {$eq:10}}});
+////=================================================================
+
+////-----------------------------------------------------------------
+//// 5) fiyat=5000 olan ve urunAdi="TV" olan dokumanlari listeleyiniz. 
+////-----------------------------------------------------------------
+use("URUNLER")
+db.fiyatlar.find({$and:[{"fiyat":5000} ,{"urunAdi":"TV"}   ]});
+
+db.fiyatlar.find({"fiyat":5000, "urunAdi":"TV"});
+
+////-----------------------------------------------------------------
+//// 6) urunAdi="Utu" olan veya vergi=10 olan dokumanlari listeleyiniz      
+////-----------------------------------------------------------------
+use("URUNLER")
+db.fiyatlar.find({$or:[{vergi:10} ,{urunAdi:"Utu"}   ]});
+
+////-----------------------------------------------------------------
+//// 7) fiyat=5000 olan URUNLERi listeleyiniz.     
+////-----------------------------------------------------------------
+ db.fiyatlar.find({ "fiyat": 5000 });
+use("URUNLER");
+db.fiyatlar.find({fiyat:        {$eq:5000} , $comment:"benim bir yorumum var"   });
+
+//eşit olmayanlar =$ne=not equal
+
+use("URUNLER");
+db.fiyatlar.find({fiyat:   {$ne:5000}   });
+use("URUNLER");
+db.fiyatlar.find({fiyat:    {$not:    {$eq:5000}  }});
+////-----------------------------------------------------------------
+//// 9) (urunAdi= TV  vergi=10) olmayan dokumanlari listeleyiniz , nor=hiçbiri
+////-----------------------------------------------------------------
+use("URUNLER")
+db.fiyatlar.find(  {$nor:[  {urunAdi:"TV"},{vergi:10}              ]    }       );
+
+////-----------------------------------------------------------------
+//// 10) urunAdi=TV olan kayitlarin sadece fiyat'ini listeleyiniz.
+////     (Bu isleme Projection denilmektedir)
+
+//// Projection'da gosterilmek istenen Field'a 1 degeri atanir Ornegin: 
+//// {"fiyat":1}, gosterilmek istenmeyenler ise yazilmaz. 
+//// Sadece _id icin bir istisna vardir.  onu istemiyorsak 0 ile belirticez
+////
+// //// SYNTAX   db.collection.find( {query}, {projection}). aynı kişinin fiyatını id sini istediği için aynı parantez, süslünün biri filtreleme şartları  için, biri göstermek istediğimiz field lar için
+////-----------------------------------------------------------------
+
+use("URUNLER")
+
+db.fiyatlar.find(  {urunAdi:"TV"} ,{ fiyat:1,     _id:0}    );
+
+//-----------------------------------------------------------------
+// 11) Tum dokumanlarin sadece fiyat ve urunAdini listeleyiniz.
+//-----------------------------------------------------------------    
+
+use("URUNLER")
+
+db.fiyatlar.find(  {} ,{ fiyat:1, urunAdi:1,    _id:0}    );
+
+////=================================================================
+////                    COMPARAISON (karşılaştırma) OPERATOR 
+//// $eq : esit mi
+//// $lt : kücük mü  (less than)
+//// $gt : buyuk mu (greater than)
+//// $lte: kucuk esit mi
+//// $gte: buyuk esit mi
+//// $ne : esit degil mi
+//// $in : belirtilen degerler, bir dizideki degerlerden birisine esit mi
+//// $nin: belirtilen degerler, bir dizideki tum degerlere esit degil mi
+//// SYNTAX :   {field: {$gte: value} }
+////=================================================================
+
+////-----------------------------------------------------------------
+//// 14) fiyatı 3500'e esit veya daha fazla olan URUNLERi sadece 
+////      urunAdi ve fiyatini listeleyiniz
+////-----------------------------------------------------------------
+use("URUNLER")
+db.fiyatlar.find( {fiyat:   { $gte:3500 }    },{fiyat:1, urunAdi:1,    _id:0 }          );
+
+////-----------------------------------------------------------------
+//// 15) fiyatı 4000'e esit veya daha kucuk olan URUNLERin SADECE 
+////  urunAdini listeleyiniz
+////-----------------------------------------------------------------
+db.fiyatlar.find({"fiyat": {$lte: 4000}} , {"urunAdi":1, "_id":0});
+
+////-----------------------------------------------------------------
+//// 16) fiyatı 1500 veya 3500 veya 7000 olan URUNLERi listeleyiniz
+////-----------------------------------------------------------------
+use("URUNLER")
+
+db.fiyatlar.find(  {    fiyat: {$in:       [  1500, 3500,7000] }  }, {_id:0})
+
+//17)üsttekinin olumsuzu
+use("URUNLER")
+
+db.fiyatlar.find(  {    fiyat: {$nin:       [  1500, 3500,7000] }  }, {_id:0})
+
+///-----------------------------------------------------------------
+//// 18) fiyatı 5000'den kucuk olup urunAdi Utu olmayan URUNLERin
+//// SADECE urunAdi ve fiyat bilgilerini listeleyiniz
+////-----------------------------------------------------------------
+use("URUNLER");
+db.fiyatlar.find({ fiyat:  {$lt:5000 },              urunAdi:  {$ne:"Utu" } },             {fiyat:1, urunAdi:1,    _id:0})
+
+////-----------------------------------------------------------------
+//// 19) fiyatı 4000'den kucuk olan VEYA urunAdi Koltuk olan URUNLERin
+//// SADECE urunAdi ve fiyat bilgilerini listeleyiniz
+////-----------------------------------------------------------------
+use("URUNLER");
+db.fiyatlar.find({  $or: [   {fiyat:  {$lt:4000}  },{urunAdi:"Koltuk"    }          ]         },{  fiyat:1, urunAdi:1,    _id:0 })
+
+////-----------------------------------------------------------------
+//// 20) URUNLERin tamamini SADECE urunAdini gosterecek sekilde  
+////     fiyatlarina gore artan sirada listeleyiniz.
+////-----------------------------------------------------------------
+// 1 : artan , -1: azalan ...projection 2. sırada yazılacağı için, query (filtre) istemiyorsak bile boş süslü
+use("URUNLER");
+db.fiyatlar.find({}, {urunAdi:1,    _id:0}).sort({fiyat:1});
+
+
+
+
+
+////tek başına project sort olunca böyle kullanılır, aggregate içinde $sort, $project... 
+
+
+////-----------------------------------------------------------------
+//// 21) URUNLERin tamamini SADECE urunAdini gosterecek sekilde  
+////     fiyatlarina gore azalan sirada listeleyiniz.
+////-----------------------------------------------------------------
+// 1 : artan , -1: azalan 
+use("URUNLER");
+db.fiyatlar.find({}, {urunAdi:1,    _id:0}).sort({fiyat:-1});
+
+
+////-----------------------------------------------------------------
+//// 22) fiyati 5000 olan URUNLERi, urunAdi'na gore siralayarak (A-Z)
+//// listeleyiniz.
+//extra eleman ekle, fiyatı 5000 olan.
+////-----------------------------------------------------------------
+// 1 : A-Z, -1: Z-A ( ASCII formatina gore siralama yapar)
+
+db.fiyatlar.find({fiyat:5000}).sort({urunAdi:1});
+
+
+use("URUNLER2")
+//db.createCollection("articles");
+
+db.articles.insertMany(
+   [
+     { _id: 1, subject: "coffee", author: "xyz", views: 50 },
+     { _id: 2, subject: "Coffee Shopping", author: "efg", views: 5 },
+     { _id: 3, subject: "Baking a cake", author: "abc", views: 90  },
+     { _id: 4, subject: "baking", author: "xyz", views: 100 },
+     { _id: 5, subject: "Café Con Leche", author: "abc", views: 200 },
+     { _id: 6, subject: "Сырники", author: "jkl", views: 80 },
+     { _id: 7, subject: "coffee and cream", author: "efg", views: 10 },
+     { _id: 8, subject: "Cafe con Leche", author: "xyz", views: 10 }
+   ]
+)
+
+
+
+use("URUNLER2")
+db.articles.createIndex( { subject: "text" } )
+
+db.articles.find({$text:{$search:"coffee"}})

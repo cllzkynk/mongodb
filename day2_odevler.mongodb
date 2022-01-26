@@ -1,0 +1,224 @@
+
+
+//1) 90'ın üzerinde puan(score) alan restoranları bulmak için bir MongoDB sorgusu yazın 
+use("ULKELER");
+db.foods.find({  "grades.score":{$gt:90}},{"grades.score":1,_id:0,name:1});
+
+
+
+use("ULKELER");
+db.foods.find({  "grades.score":{$gt:90}},{"grades.score":1,_id:0,name:1});
+
+//2.yol
+use("ULKELER");
+db.foods.find({grades : { $elemMatch:{"score":{$gt : 90}}}}, {borough:1,cuisine:1,grades:1,_id:0}  );
+
+
+
+
+//2) 80'den fazla 150'den az puan alan restoranları bulmak için bir MongoDB sorgusu yazın
+
+use("ULKELER");
+db.foods.find({"grades.score":{$gt:80,$lte:150}},{"grades.score" :1,_id:0,name:1});
+
+
+
+//3) Herhangi bir "American " mutfağı hazırlamayan ve 70'den büyük score a ve -65.754168'den küçük 
+//enlem değerine sahip restoranları bulmak için bir MongoDB sorgusu yazın
+
+use("ULKELER");
+db.foods.find({ "cuisine":{$ne:"American " },"grades.score":{$gt:70} ,"address.coord":{$lt:-65.754168}},
+{cuisine:1 ,"address.coord":1,"grades.score":1,_id:0 })
+
+//4) Adının ilk üç harfi 'Wil' olan restoranlar için restoran kimliği, 
+//adı, ilçesi ve mutfağını bulmak için bir MongoDB sorgusu yazın.
+
+use("ULKELER");
+db.foods.find({ name:/^Wil/ },{restaurant_id:1 , borough:1,name:1 ,cuisine:1 ,_id:0})
+
+
+use("ULKELER");
+db.foods.find({ name:/Wil/ },{restaurant_id:1 , borough:1,name:1 ,cuisine:1 ,_id:0})
+
+//5) Adının bir yerinde üç harf olarak 'Reg' içeren restoranlar için restoran kimliği, 
+//adı, ilçesi ve mutfağını bulmak için bir MongoDB sorgusu yazın.
+use("ULKELER");
+db.foods.find({ name:/Reg/ },{restaurant_id:1 , borough:1,name:1 ,cuisine:1 ,_id:0})
+
+//6) Staten Island veya Queens veya Bronxor Brooklyn borough a ait restoranlar için restoran id sini, adını,
+// borough(ilçe) ve mutfağını bulmak için bir MongoDB sorgusu yazın
+
+use("ULKELER");
+db.foods.find({borough:{$in:["Staten Island", "Queens", "Bronx", "Brooklyn"]}},{
+    restaurant_id:1, name:1, borough:1, cuisine:1, _id:0 });
+
+    //7) 'Amerikan' ve 'Chinees' dışında yemek yapan veya restoranın adı 'Wil' harfiyle
+    // başlayan restoranların restoran kimliği, adı, ilçesi ve mutfağını bulmak için
+    // bir MongoDB sorgusu yazın.
+ 
+use("ULKELER");
+db.foods.find( {$or:[  {   name: /^Wil/}   , { $and : [  {  
+     "cuisine": {$ne: "American "}}, {   "cuisine": {$ne:"Chinese"}}    
+]}   ]}, {restaurant_id:1,  borough:1,name:1, cuisine:1 ,_id:0 })
+
+
+
+
+
+use("ULKELER");
+db.foods.find({$or : [{name:/^Wil/},{cuisine : {$nin :["American ","Chinese"]}}]},
+{restaurant_id:1,name:1,cuisine:1,borough:1,_id:0});
+
+
+
+
+
+
+
+
+
+//8) grades (dereceler) dizisinin ISODate "2014-08-11T00:00:00Z"
+// tarihinde grade (seviyesi )  "A"  olan ve  11 score almış restoranlar 
+//için restoran id sini, adını ve grades lerini bulmak için bir MongoDB sorgusu yazın.
+
+use("ULKELER");
+db.foods.find({"grades.date":ISODate("2014-08-11T00:00:00Z"),
+                      "grades.grade":"A",
+                      "grades.score":11 },
+                      {restaurant_id:1,
+                      name:1,
+                      grades:1
+                      ,_id:0
+ 
+                      }
+                       
+                      )
+
+
+
+
+
+// 9) grades dizisinin 2. öğesinin, (grade) bir "A" notu içerdiği 
+//ve bir ISODate "2014-08-11T00:00:00Z" tarihinde 9 score aldığı restoranlar 
+//için restoran id sin0i, adını ve grades bulmak için bir MongoDB sorgusu yazın
+
+use("ULKELER");
+
+db.foods.find({"grades.1.date":ISODate("2014-08-11T00:00:00Z"),
+                      "grades.1.grade":"A",
+                      "grades.1.score":9 },
+                      {restaurant_id:1,
+                      name:1,
+                      grades:1
+                      ,_id:0})
+
+
+
+
+
+
+use("ULKELER");
+
+db.foods.find({"grades.1.date":ISODate("2014-08-11T00:00:00Z"),
+                      "grades.1.grade":"A",
+                      "grades.1.score":9 },
+                      {restaurant_id:1,
+                      name:1,
+                      grades:1
+                      ,_id:0})
+
+
+
+
+
+
+
+
+
+
+//Hocadan
+use("ULKELER")
+db.foods.find( 
+                      { "grades":{ "date": ISODate("2014-08-11T00:00:00Z"),
+"grade": "A", "score": 9 }
+                      }, 
+                       {"restaurant_id" : 1,"name":1,
+                       "grades.$":1 }
+                   );
+
+
+
+
+
+
+
+
+use("ULKELER");
+
+db.foods.find({  "grades":{
+           "date": ISODate("2014-08-11T00:00:00Z"),
+            "grade": "A",
+                 "score": 9 } },
+                 {restaurant_id:1,
+                 grades:{$and:[{"grade":"A"},{"score":9},{"date":ISODate("2014-08-11T00:00:00Z")}]},
+                      name:1,
+                     
+                    
+                     _id:0})
+//============================================================================
+
+
+
+
+
+
+//10) Tüm adreslerin caddeyi içerip içermediğini öğrenmek 
+//için bir MongoDB sorgusu yazın, cadde yazmayı unuttuğum varmı diye kontrol için.
+ //$exists : true =var olanları, $exists : false=yok olanları gösterir
+
+
+use("ULKELER")
+db.foods.find({"address.street":{$exists:false}})
+
+//11) score u 7'ye böldükten sonra kalan olarak 0 
+//döndüren restoranlar için restoran id si, adı ve grades seçecek bir MongoDB sorgusu yazın
+
+use("ULKELER")
+
+db.foods.find({"grades.score": {$mod:[7,0] } },{ restaurant_id:1,name:1, grades:1,_id:0  })
+
+
+
+
+//ODEV
+//10)Koordinat (coord[]) dizisinin 2. elemanı 42'den fazla ve 52'ye kadar bir değer 
+//içeren restoranların restoran id, adı, adresi ve coğrafi konumunu (coords)
+// bulmak için bir MongoDB sorgusu yazın.
+
+
+
+
+
+//ödev
+//coord değeri -95.754168'den küçük olan restoranları bulmak için bir MongoDB sorgusu yazın
+
+//ödev
+    //-65.754168 'den küçük boylamda yer alan ve 70'den fazla score alan 'Amerikan' mutfağı (cuisine) hazırlamayan restoranları bulmak için bir MongoDB sorgusu yazın.
+    
+     //ödev
+//Herhangi bir 'Amerikan' mutfağı hazırlamayan ve Brooklyn borough a ait olmayan, 'A' score alan restoranları bulmak için bir MongoDB sorgusu yazın. Belge, mutfağa göre azalan sırada görüntülenmelidir. 
+
+//ödev
+//Adının son üç harfi 'ces' olan restoranlar için restoran kimliği, adı, ilçesi ve mutfağını bulmak için bir MongoDB sorgusu yazın
+
+//ödev
+//Bronx borough a ait , Amerikan veya Çin yemeği hazırlayan restoranları bulmak için bir MongoDB sorgusu yazınız
+
+//ödev
+//Puanı 10'dan fazla olmayan restoranların restoran id si, adı, ilçesi ve mutfağını bulmak için bir MongoDB sorgusu yazın.
+
+ //ödev
+//Koordinat (coord[]) dizisinin 2. elemanı 42'den fazla ve 52'ye kadar bir değer içeren restoranların restoran id, adı, adresi ve coğrafi konumunu (coords) bulmak için bir MongoDB sorgusu yazın.
+
+//ödev
+//Mutfağın adını artan sırada düzenlemek için bir MongoDB sorgusu yazın ve aynı mutfak için ilçe azalan sırada olmalıdır.

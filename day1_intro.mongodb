@@ -1,0 +1,88 @@
+
+// /=================================================================
+//                     TEMEL KOMUTLAR
+// =================================================================
+
+// -----------------------------------------------------------------
+// 1) Varolan veritabanlarini listelemek icin. 
+// //-----------------------------------------------------------------
+ show dbs;
+
+// -----------------------------------------------------------------
+// 2) Veritabani tanimlamak veya icine girmek icin 
+// ----------------use tablo ismi hep açık olmalı, sorgu yaparken sadece sorgu seçili olmamalı
+use("KİSİLER");
+
+//-----------------------------------------------------------------
+// 3) Icinde bulundugumuz (aktif) Veritabanini gormek icin
+// //----------------------------------------------------------------
+use("KİSİLER");
+ db;
+
+// -----------------------------------------------------------------
+// 4) Aktif olan veritabaninda bir collection olusturmak icin
+// -----------------------------------------------------------------
+use("KİSİLER");
+db.createCollection("ogrenciler");
+ 
+// -----------------------------------------------------------------
+// 5) Aktif olan veritabanini silmek icin  
+// ----------------------------------------------------------------
+use("KİSİLER");
+db.dropDatabase();
+
+// -----------------------------------------------------------------
+// 6) Bir collection ı silmek için
+// //-----------------------------------------------------------------
+use("KİSİLER");
+ db.ogrenciler.drop();
+
+
+
+// -----------------------------------------------------------------
+// 7) collection'a bir dokuman eklemek icin
+// -----------------------------------------------------------------
+use("KİSİLER");
+db.ogrenciler.insertOne({"ad": "Murat", "soyad": "Cakir", "yas": 41});
+
+// -----------------------------------------------------------------
+// 8) Collection'daki tum dokumanlari listelemek (SORGU-QUERY)icin.
+// //-----------------------------------------------------------------
+use("KİSİLER");
+db.ogrenciler.find();
+
+// -----------------------------------------------------------------
+// 9) Collection'a birden fazla dokuman eklemek icin
+// -----------------------------------------------------------------
+use("KİSİLER");
+db.ogrenciler.insertMany([
+ {"ad": "Ahmet", "soyad": "Can", "yas": 21},
+ {"ad": "Ali", "soyad": "Can", "yas": 51},
+ {"ad": "Veli", "soyad": "Gel", "yas": 22}] );
+ 
+
+
+
+
+
+ // -----------------------------------------------------------------
+// 10) bir değişkene tarih ekle new Date()
+// -----------------------------------------------------------------
+use("KİSİLER");
+db.ogrenciler.insertOne({"suanki_tarih":new Date()});
+
+
+use("KİSİLER");
+db.ogrenciler.insertOne({"ad": "mehmet", "soyad": "akgül", "yas": 41, "tarih":new ISODate().getMonth()});
+
+
+use("KİSİLER");
+db.ogrenciler.insertOne({"ad": "mehmet", "soyad": "akgül", "yas": 41, "tarih":new Date().getYear()});
+
+use("KİSİLER");
+db.ogrenciler.find();
+
+//Uluslararası Standardizasyon Örgütü (ISO=The International Organization for Standardization ) tarih formatı, 
+//belirsizliği ortadan kaldıran sayısal bir takvim tarihini ifade etmenin standart bir yoludur . 
+//Örneğin, Kuzey Amerikalılar genellikle tarihten önceki ayı yazarlar. 
+//Avrupalılar aydan önceki tarihi 30 Mart 1998 için "30.3. 1998" olarak yazarlar.
