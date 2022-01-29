@@ -1,0 +1,139 @@
+/////==================================================================================
+////                          UNIONWITH (FULL JOIN)
+////==================================================================================
+//  - SQL'deki UNION ALL komutuna benzer.
+//  - 2 collection'nin birlesimini gerceklestirmek icin kullanılir. 
+//  - Ornegin, $unionWith 2 farklı collection'daki pipeline sonuclarini tek bir 
+//    sonuc setinde birlesitirir. 
+//  - Bu sonuc seti pipeline'da bir sonraki asamaya iletilebilir.
+//  - SYNTAX:
+//  - { $unionWith: { coll: "<collection>", pipeline: [ <stage1>, ... ] } }
+////================================================================================
+
+
+use("MEDYA");
+
+db.romanlar.insertMany(
+[{"yazar" : "Mehmet Bak", "fiyat" : 60, "yayinEvi" : "Yildiz", "adet": 1000 },
+{"yazar" : "Ali Gel", "fiyat" : 75, "yayinEvi" : "MaviAy", "adet": 1200 },
+{"yazar" : "Su Ak", "fiyat" : 90, "yayinEvi" : "Caliskan", "adet": 2200},
+{"yazar" : "Meryem Can", "fiyat" : 35, "yayinEvi" : "MorEv","adet": 560},
+{"yazar" : "Pelin Su", "fiyat" : 80, "yayinEvi" : "Hedef", "adet": 890 },
+{"yazar" : "Suat Ok", "fiyat" : 54, "yayinEvi" : "Sinir","adet": 245}]);
+
+use("MEDYA")
+db.denemeler.insertMany(
+[{"yazar" : "Mehmet Bak", "fiyat" : 34, "yayinEvi" : "Yildiz", "adet": 400 },
+{"yazar" : "Deniz Kos", "fiyat" : 44, "yayinEvi" : "Yildiz", "adet": 350 },
+{"yazar" : "Su Ak", "fiyat" : 50, "yayinEvi" : "MorEv", "adet": 200},
+{"yazar" : "İsmet Kaç", "fiyat" : 25, "yayinEvi" : "Hedef","adet": 800},
+{"yazar" : "Ali Gel", "fiyat" : 40, "yayinEvi" : "Hedef", "adet": 1200 },
+{"yazar" : "Meryem Can", "fiyat" : 22, "yayinEvi" : "MaviAy","adet": 300}]);
+
+////---------------------------------------------------------------------------------
+//// 1)  Her 2 collection'dan tum dokumanlari "adet" sutununa (field) gore ters siralayarak 
+////     listeleyiniz(FULL JOIN). id gözükmesin
+// ////---------------------------------------------------------------------------------
+
+use("MEDYA");
+db.denemeler.aggregate({$unionWith:{coll:"romanlar"}},{$sort:{adet:-1}} ,{$project:{_id:0}}      
+                 )
+
+                 ////---------------------------------------------------------------------------------
+//// 2) Her bir yayinevinin toplam kitap sayilarini (2 collection icin) hesaplayan 
+////    ve siralayan sorguyu yaziniz. 
+////---------------------------------------------------------------------------------
+use("MEDYA");
+db.denemeler.aggregate({$unionWith:{coll:"romanlar"}},
+{$group: {  _id:"$yayinEvi", toplam_kitap_sayisi:{$sum:"$adet"}  }} ,
+{$sort:{toplam_kitap_sayisi:1}}
+)
+
+
+
+////---------------------------------------------------------------------------------
+//// 3) Her bir yayinEvinin kitap (deneme ve roman) satislarindan  elde edecegi toplam 
+////    geliri hesaplayan sorguyu yaziniz. (birleşen collection larda carpma icin $multiply)
+////---------------------------------------------------------------------------------
+use("MEDYA")
+db.denemeler.aggregate({$unionWith:{coll:"romanlar"}},
+{$group: {  _id:"$yayinEvi", toplam_gelir:{$sum:{$multiply:["$fiyat","$adet"]}},  }} ,
+{$sort:{toplam_gelir:1}}
+)
+
+
+
+////==================================================================================
+////                       $LOOKUP (LEFT, RIGHT, INNER JOIN) 
+////    {
+////      $lookup:
+////      {
+////        from: <Join uygulanacak collection>,
+////        localField: <giris dokumanindaki ilgili sutunu>,
+////        foreignField: <Join yapilacak collectiondaki ilgili sutun>,
+////        as: <cikis sutunu>
+////      }
+////   }
+////==================================================================================
+use("MEDYA")
+db.siirler.insertMany(
+[{"muellif" : "Mehmet Bak", "fiyat" : 34, "yayinEvi" : "Yildiz", "adet": 400 },
+{"muellif" : "Deniz Kos", "fiyat" : 44, "yayinEvi" : "Yildiz", "adet": 350 },
+{"muellif" : "Su Ak", "fiyat" : 50, "yayinEvi" : "MorEv", "adet": 200},
+{"muellif" : "İsmet Kaç", "fiyat" : 25, "yayinEvi" : "Hedef","adet": 800},
+{"muellif" : "Ali Gel", "fiyat" : 40, "yayinEvi" : "Hedef", "adet": 1200 },
+{"muellif" : "Meryem Can", "fiyat" : 22, "yayinEvi" : "MaviAy","adet": 300}]);
+//en üstteki romanlar ile bunu birleştireceğiz
+
+////---------------------------------------------------------------------------------
+//// 5) Her iki collectionda ortak olan yazarlarin toplam kitap sayilarini ve kitap 
+////    fiyatlarinin toplamini hesaplayan sorguyu yaziniz. (INNER JOIN)   gözükmesini istediğimiz eklenecek field lar için ; addFields değil ,project içinde yazacağız. 
+////-----------
+
+use("MEDYA")
+
+db.romanlar.aggregate({  $lookup:{
+ from:"siirler",
+ localField:"yazar",
+ foreignField:"muellif",
+ as:"ortak"
+}   },
+
+{ $unwind:{ path:"$ortak"}  //2. foreign tabloyu da bağla, 
+                            //yolunu belirt, sonra iki tabloylada altta işlem yap ,
+                            // yazmazsak tek tabloyla işlem yapıyor. 
+                             //bu olmazsa sadece soldaki yazarları alır adetleri toplamaz
+     
+
+},
+
+  {$project:{ toplamFiyat:{$sum:["$fiyat","$ortak.fiyat"]},
+       toplamAdet:{$sum:["$adet","$ortak.adet"]}, _id:0,yazar:1
+ }}
+)
+
+
+////---------------------------------------------------------------------------------
+//// 6) romanlar collectionda yer alan her bir yazarin toplam kitap sayilarini (
+////    2 collection icin) hesaplayan sorguyu yaziniz. (LEFT JOIN)     project yerine addFields ta olur ama o zaman şu olmasın diyemem
+////---------------------------------------------------------------------------------
+
+
+db.romanlar.aggregate({  $lookup:{
+ from:"siirler",
+ localField:"yazar",  //romanlardan, ilk giriş collection field ı
+ foreignField:"muellif", // şiirlerden, 2. eklenen collection field ı
+ as:"yazarlar"
+}   },
+
+{ $unwind:{ path:"$yazarlar", preserveNullAndEmptyArrays:true}
+     
+
+},
+
+  {
+   $project:{toplamKitap: {$sum: ["$adet", {$ifNull:["$yazarlar.adet", 0]}]},
+   _id:0, yazar:1
+   }
+  }
+)

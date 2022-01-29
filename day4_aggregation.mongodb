@@ -156,25 +156,131 @@ use("KISILER")
 
 db.ogrenciler.aggregate({$group:{_id: "$sube",toplamOgrenci:{$sum:1},maxNot:{$max:"$not"}}})
 
+//---------------------------------------------------------------------------------
+//// 7) yasi 30'Dan kucuk olanlarin subelere gore not ortalamalarini hesaplayan 
+////    sorguyu yaziniz.
+////---------------------------------------------------------------------------------
+db.ogrenciler.aggregate( {$match:{yas :{$lt:30}}},{$group: {_id:"$sube",ortalamaNot: {$avg: "$not"}}}
+);
+
+////---------------------------------------------------------------------------------
+//// 8) inglizce dersini alanlarin subelere gore sayilarinı hesaplayan sorguyu yaziniz.(ingilizce yanında başka derste olabilir)
+////---------------------------------------------------------------------------------
+//ingilizceyi köşeli içine alırsam sadece ingilizce yazanı getirir [ingilizce]
+use("KISILER")
+db.ogrenciler.aggregate({$match: {dersler:"ingilizce"}},
+ {$group: {  _id:"$sube",  ingAlanSayısı:{$sum:1}  }}  )
+
+
+//9)fizik veya matematik alanlarin subelere gore sayilari hesaplayan sorguyu yaziniz.
+use("KISILER");
+db.ogrenciler.aggregate({$match: {dersler:{$in:["fizik","mat"]}}},{$group: {  _id:"$sube",  FizVEYAMat:{$sum:1}  }} )
+
+
+use("KISILER");
+db.ogrenciler.aggregate({$match: { $or: [{dersler  :["fizik","mat"]}]}},{ $group: { _id: "$sube", matVeyaFizAlanlar: {    $sum: 1  } }})
+
+//buradaki köşeli $in operator unun köşelisi
+////---------------------------------------------------------------------------------
+//// 10) sadece Fizik ve Mat dersini alanlarin subelere gore sayilari hesaplayan sorguyu yaziniz.
+////---------------------------------------------------------------------------------
+use("KISILER");
+db.ogrenciler.aggregate({$match: {dersler:["fizik","mat"]}},{$group: {  _id:"$sube",  FizVEMat:{$sum:1}  }} )
+
+
+////---------------------------------------------------------------------------------
+//// 11) A subesindeki ogrencileri yasa gore azalan sirada, nota gore yukselen sirada
+////     siralayiniz.
+////---------------------------------------------------------------------------------
+use("KISILER");
+
+db.ogrenciler.aggregate({$match:{sube:"A"} },{$sort:{yas:-1,not:1}})
 
 
 
+//---------------------------------------------------------------------------------
+//// 12) MEDYA veritabanı altında hesaplar ismiyle yeni bir collection olusturunuz
+//       ve degerleri giriniz.
+////---------------------------------------------------------------------------------
+use("MEDYA")
+db.hesaplar.insertMany(
+[{"isim" : "ali", "harcamalar":[-80, -40, -50, -120], "kazanc":[100, 150]},
+{"isim" : "Can", "harcamalar" : [-60, -30, -20], "kazanc" : [200, 50, 130] },
+{"isim" : "Canan", "harcamalar" : [-80, -40, -50], "kazanc" : [300, 450] },
+{"isim" : "Betul", "harcamalar" : [-80, -120], "kazanc" : [500, 50, 70, 10] },
+{"isim" : "Ahsen", "harcamalar" : [-140, -50, -120], "kazanc" : [400] },
+{"isim" : "Su", "harcamalar" : [-120], "kazanc" : [22, 375, 65] },
+{"isim" : "Pelin", "harcamalar" : [-180, -40, -70, -12], "kazanc" : [500, 650, 400]}]); 
+
+////---------------------------------------------------------------------------------
+//// 13) var olan dokumanlarda her kisi icin toplam harcama, toplam kazanc ve  
+////     bakiye degerlerini hesaplayarak dokumana ekleyen sorguyu yaziniz.
+////     bakiye'ye gore siralayiniz.
+////     NOT: Sorguda olmayan bir field icin $addFields metodu kullanilabilir. project lede yeni field ekleniyor , join classında görücez ama 2 seferde fields eklemek için addFields kullanmalıyız, project bir kere yazılabilir
+////---------------------------------------------------------------------------------
+use("MEDYA");
+
+db.hesaplar.aggregate({$addFields:{toplamHarcama:{$sum:"$harcamalar"}, toplamKazanc:{$sum:"$kazanc"}}}
+,
+{$addFields:{bakiye:{$sum:["$toplamHarcama","$toplamKazanc"]}}})
+
+
+//hocadan
+use("MEDYA");
+db.hesaplar.aggregate({$addFields: {toplamHarcama:  {$sum: "$harcamalar"}, toplamKazanc: {$sum:"$kazanc"}      }   },{ $addFields:{bakiye:{$sum:  ["$toplamHarcama", "$toplamKazanc" ]  }}}
+
+)
 
 
 
+use("MEDYA");
+db.hesaplar.aggregate({$addFields: {toplamHarcama:  {$sum: "$harcamalar"}, toplamKazanc: {$sum:"$kazanc"}      }   },
+{ $addFields:{bakiye:{$sum:  ["$toplamHarcama", "$toplamKazanc" ]  }}},{$project:{"harcamalar":0,"kazanc":0,_id:0}}
+
+)
 
 
 
+///---------------------------------------------------------------------------------
+//// 14) hesaplar collection'nin muhasabe adinda bir kopyasini olusturalim.
+////---------------------------------------------------------------------------------
+use("MEDYA")
+ db.hesaplar.aggregate({$project:{_id:0}}, {$merge: {into:"muhasabe"}});
+//id:0 kapatmasaydım eski id lerle kopya oluşturacaktı, şimdi default verecek
+////---------------------------------------------------------------------------------
+//// 15) hesaplar collection'nindan harcamalar kismini cikararak kazanclar adinda 
+////     yeni bir kopyasini olusturalim.
+// ////---------------------------------------------------------------------------------
+use("MEDYA")
+ db.hesaplar.aggregate({$project: {harcamalar:0, _id:0}}, {$merge: {into:"kazanclar"}});
 
 
+////==================================================================================
+////                                  BULKWRITE (toplu yazmak)
+////  Birden fazla islemi ayni komutla gerceklestirmek icin BulkWrite kullanilabilir.
+// https://docs.mongodb.com/manual/reference/method/db.collection.bulkWrite/
+// db.collections.bulkWrite([
+//       {insertOne:{"document": {yazar: "........", fiyat:....., yayinYili : ...... }}},
+//   {updateOne:{"filter":{yazar: "......"}, "update": {$set: {fiyat:.......}}}},
+//   {replaceOne:{"filter":{yazar:"......."}, "replacement": {yazar: "......", fiyat:.....}}},
+//   {deleteOne:{"filter" : {yazar: "........."}}}
+//    ]);
+//==================================================================================
+use("MEDYA");
+db.hikayeler.insertMany(
+[{"yazar" : "Mehmet Bak", "fiyat" : 60, "yayinYili" : 1998 },
+{"yazar" : "Ali Gel", "fiyat" : 75, "yayinYili" : 2000 },
+{"yazar" : "Su Ak", "fiyat" : 90, "yayinYili" : 2005 },
+{"yazar" : "İsmet Kaç", "fiyat" : 35, "yayinYili" : 2010 },
+{"yazar" : "Pelin Su", "fiyat" : 80, "yayinYili" : 2020 },
+{"yazar" : "Suat Ok", "fiyat" : 54, "yayinYili" : 2001},
+{"yazar" : "Pelin Su", "fiyat" : 50, "yayinYili" : 2020 }]);
 
+use("MEDYA")
 
-
-
-
-
-
-
-
-
-
+db.hikayeler.bulkWrite([
+  {insertOne:{"document": {yazar: "Selim Genc", fiyat: 77, yayinYili : 2021 }}},
+  {updateOne:{"filter":{yazar: "Ali Gel"}, "update": {$set: {fiyat:99}}}},
+  {replaceOne:{"filter":{yazar:"Pelin Su"}, "replacement": {yazar: "Ceylan Kaya", fiyat:55}}},
+  {deleteOne:{"filter" : {yazar: "Suat Ok"}}}
+]);
